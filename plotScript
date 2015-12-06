@@ -1,0 +1,10 @@
+unset key
+set tic scale 0
+
+# Color runs from white to green
+set palette rgbformula  23,28,3
+set cbrange [.5:1]
+set view map
+splot "rho_values.dat" matrix with image
+
+pause -1 "Hit any key to continue"

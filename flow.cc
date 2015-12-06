@@ -76,8 +76,8 @@ struct Traffic{
 
   MatDoub rho_matrix;
   VecDoub road;
-  int size_road = 8;
-  int t = 100;
+  int size_road = 45;
+  int t = 200;
 
   Doub delta = 1.0/ (Doub)size_road;
 
@@ -166,6 +166,34 @@ struct Traffic{
     cout << endl;
   }
 
+  void write(){
+
+    int width = 12;
+
+    ofstream outfile;
+    outfile.open("rho_values.dat");
+    outfile.setf(ios::left);
+   // outfile << "#================================"
+    //<< "================================================================\n";
+   // outfile << "#" << setw(width) << "t" << setw(width) << "rho\n";
+
+    for(int i = 0; i < t; i++){
+      
+
+      for(int j = 0; j <= size_road; j++){
+
+        outfile << setw(width) <<
+            setprecision(3) << rho_matrix[i][j];
+      }
+      outfile << endl;
+    }
+
+    outfile.close();
+
+  }
+
+  
+
 };
 
 
@@ -185,8 +213,10 @@ int main(){
   traf.update();
 
 
-  traf.print_matrix();
-  traf.print_road();
+  //traf.print_matrix();
+  //traf.print_road();
+
+  traf.write();
 
   return 0;
 }
