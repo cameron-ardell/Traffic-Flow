@@ -37,18 +37,18 @@ struct RoadRage {
       //Boundaries (Use ghost points at boundaries)
       //Left boundary
       if(i==0) {
-	f_left = rho[size_road] * u_max * (1.0 - rho[size_road]/ p_max);
-	f_right = rho[i+1] * u_max * (1.0 - rho[i+1])/ p_max;
+  f_left = rho[size_road] * u_max * (1.0 - rho[size_road]/ p_max);
+  f_right = rho[i+1] * u_max * (1.0 - rho[i+1])/ p_max;
       } 
       //Right boundary
       else if (i==size_road) {
-	f_right = rho[0] * u_max * (1.0 - rho[0]/ p_max);
-	f_left = rho[i-1] * u_max * (1.0 - rho[i-1]/ p_max);
+  f_right = rho[0] * u_max * (1.0 - rho[0]/ p_max);
+  f_left = rho[i-1] * u_max * (1.0 - rho[i-1]/ p_max);
       }
       //Not on boundaries
       else{
-	f_right = rho[i+1] * u_max * (1.0 - rho[i+1]/ p_max);
-	f_left = rho[i-1] * u_max * (1.0 - rho[i-1]/ p_max);
+  f_right = rho[i+1] * u_max * (1.0 - rho[i+1]/ p_max);
+  f_left = rho[i-1] * u_max * (1.0 - rho[i-1]/ p_max);
       }
 
       //Calculate f at i
@@ -147,7 +147,7 @@ struct Traffic{
 
       //Guess
       Doub cur_rho = rho_bar + perturb
-	* exp(-( x - x_center)* ( x - x_center) / (lambda * lambda));
+  * exp(-( x - x_center)* ( x - x_center) / (lambda * lambda));
 
       //Write to road vector and rho matrix
       road[index] = cur_rho;
@@ -174,34 +174,34 @@ struct Traffic{
       //Write rho values to file if t is in quarters of tmax
       if(i == t/4 || i==t/2 || i==3*t/4 || i==t-1){
 
-	//Create file with rho values over time
-	ofstream outfile_t;
-	ostringstream filename;
-	filename << "Rho over x at t=" << i << ".out" << ends;
-	outfile_t.open(filename.str().c_str());
+  //Create file with rho values over time
+  ofstream outfile_t;
+  ostringstream filename;
+  filename << "Rho over x at t=" << i << ".out" << ends;
+  outfile_t.open(filename.str().c_str());
     
-	outfile_t.setf(ios::left);
-	outfile_t << "#Rho    " << "x   " << endl;
+  outfile_t.setf(ios::left);
+  outfile_t << "#Rho    " << "x   " << endl;
 
-	//Write rho vs x to file
-	for(int s = 0; s <= size_road; s++){
+  //Write rho vs x to file
+  for(int s = 0; s <= size_road; s++){
 
-	  //Write road vector to rho matrix
-	  rho_matrix[i][s] = road[s];
-	  //Write rho and x to file
-	  outfile_t << setw(6) << s << setw(6) << road[s] << endl;
-	}
+    //Write road vector to rho matrix
+    rho_matrix[i][s] = road[s];
+    //Write rho and x to file
+    outfile_t << setw(6) << s << setw(6) << road[s] << endl;
+  }
       }
 
       //Write rho vector to road matrix
       for(int s = 0; s <= size_road; s++){
 
-	rho_matrix[i][s] = road[s];
+  rho_matrix[i][s] = road[s];
 
         //Write rho and x and t to file (skip first iteration)
-	if(i != 0){
-	  outfile_p << setw(12) << i << setw(12) << s / ((Doub)size_road) << setw(12) << road[s] << endl;
-	}
+  if(i != 0){
+    outfile_p << setw(12) << i << setw(12) << s / ((Doub)size_road) << setw(12) << road[s] << endl;
+  }
       }
       outfile_p << endl;
   
@@ -220,13 +220,13 @@ struct Traffic{
     outfile_r << "#====================================================" << endl;
 
     for(int i = 0; i < t; i++){
-			
+      
 
       for(int j = 0; j <= size_road; j++){
 
-	cout << setw(12) << setprecision(3) << rho_matrix[i][j];
-	outfile_r << j / ((Doub)size_road + 1) << setw(16) << i << setw(16)
-		  << setw(16) << rho_matrix[i][j] << endl;
+  cout << setw(12) << setprecision(3) << rho_matrix[i][j];
+  outfile_r << j / ((Doub)size_road + 1) << setw(16) << i << setw(16)
+      << setw(16) << rho_matrix[i][j] << endl;
       }
       cout << "\n";
       outfile_r << endl;
@@ -257,7 +257,7 @@ struct Traffic{
       for(int j = 0; j <= size_road; j++){
 
         outfile << setw(width) <<
-	  setprecision(3) << rho_matrix[i][j];
+    setprecision(3) << rho_matrix[i][j];
       }
       outfile << endl;
     }
@@ -286,8 +286,8 @@ int main(){
   //traf.print_road();
   traf.update();
 
-  traf.print_matrix();
-  traf.print_road();
+  //traf.print_matrix();
+  //traf.print_road();
 
   traf.write();
 

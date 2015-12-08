@@ -1,9 +1,17 @@
+set term postscript enhanced color
+
+set output "testing_shit.ps"
+
+
+set title "Density Map of Traffic"
 unset key
 set tic scale 0
 
-# Color runs from white to green
 set palette rgbformula  23,28,3
-set cbrange [.5:1]
+set cbrange [0:1]
+set cblabel "Density"
+set xlabel "Grid Point on Road"
+set ylabel "Time Interval"
 set view map
 splot "rho_values.dat" matrix with image
 

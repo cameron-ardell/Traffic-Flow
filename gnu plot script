@@ -6,8 +6,9 @@ set palette rgbformula  23,28,3
 set cbrange [0:1]
 set view map
 splot "rho_values.dat" matrix with image
+pause -1 "Hit any key to continue"
 
-//heat plot
+#heat plot
 # set terminal postscript
 set xlabel 'x'
 set ylabel 'Rho'
@@ -15,21 +16,23 @@ set title 'Rho vs x'
 set xrange[0:100]
 set yrange[0:1]
 plot "Rho over x at t=0.out" u 1:2 w l,"Rho over x at t=25.out" u 1:2 w l,"Rho over x at t=50.out" u 1:2 w l,"Rho over x at t=75.out" u 1:2 w l,"Rho over x at t=99.out" u 1:2 w l,
+pause -1 "Hit any key to continue"
 
-//surface plot
+#surface plot
 set xlabel 'x'
 set ylabel 't'
 set title 'Rho vs x'
 set xrange[0:100]
 set yrange[0:1]
 splot "Rho over x and t" u 1:2:3 w l,
+pause -1 "Hit any key to continue"
 
 set term postscript
 set output "Norm.ps"
 replot
+#pause -1 "Hit any key to continue"
 
 
 
 
-
-plot "Rho over x at t=0.out" u 1:2 w l,"Rho over x at t=5.out" u 1:2 w l,"Rho over x at t=10.out" u 1:2 w l,"Rho over x at t=19.out" u 1:2 w l,"Rho over x at t=15.out" u 1:2 w l,
+#plot "Rho over x at t=0.out" u 1:2 w l,"Rho over x at t=5.out" u 1:2 w l,"Rho over x #at t=10.out" u 1:2 w l,"Rho over x at t=19.out" u 1:2 w l,"Rho over x at t=15.out" u #1:2 w l,
