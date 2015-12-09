@@ -1,0 +1,20 @@
+#surface plot
+set xlabel 't'
+set ylabel 'x'
+set title 'Rho vs x vs t'
+set xrange[0:15]
+set yrange[0:1]
+splot "Rho over x and t" u 1:2:3 w l,
+pause -1 "Hit any key to continue"
+
+
+set xlabel 'x'
+set ylabel 'rho'
+set title 'Rho vs. x'
+set xrange[0:1]
+set yrange[.5:.5015]
+
+#plot "Rho over x at t=0.out" u 1:($2 + .0001) w l, "Rho over x at t=2.out" u 1:($2 + .00025) w l,"Rho over x at t=5.out" u 1:($2 + .0005) w l,"Rho over x at t=7.out" u 1:($2 + .00075) w l,"Rho over x at t=9.out" u 1:($2 + .001) w l
+plot "Rho over x at t=0.out" u 1:($2 + .000) w l, "Rho over x at t=2.out" u 1:($2 + .000) w l,"Rho over x at t=5.out" u 1:($2 + .000) w l,"Rho over x at t=7.out" u 1:($2 + .000) w l,"Rho over x at t=9.out" u 1:($2 + .00) w l
+
+pause -1 "Hit enter to continue"

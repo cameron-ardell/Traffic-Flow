@@ -13,6 +13,6 @@ set cblabel "Density"
 set xlabel "Grid Point on Road"
 set ylabel "Time Interval"
 set view map
-splot "rho_values.dat" matrix with image
+splot "heatmap.dat" matrix with image
 
 pause -1 "Hit any key to continue"
