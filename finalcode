@@ -1,0 +1,312 @@
+#include "nr3.h"
+#include "odeint.h"
+#include "stepper.h"
+#include "stepperdopr5.h"
+
+using namespace std;
+
+
+struct RoadRage {
+
+
+  Doub u_max,p_max,eta;
+  int size_road;
+
+  //constructor (get and set rho vector)
+  RoadRage(Doub u_max_in, Doub p_max_in,int size_road_in,Doub eta_in){
+    u_max = u_max_in;
+    p_max = p_max_in;
+    size_road = size_road_in;
+    eta = eta_in;
+  };
+
+  ~RoadRage() {};
+
+  //function to integrate over
+  void operator() (const Doub x, VecDoub_I &rho, VecDoub_O &dpdt){
+
+    //Use finite differencing to find df(p)/dx
+    Doub f_right,f_left,f_cent,visc;
+    Doub delta = 1.0 / (Doub)size_road;
+
+    for(int i = 0; i <= size_road; i++){
+
+      //Boundaries (Use ghost points at boundaries)
+      //Left boundary
+      if(i==0) {
+	f_left = rho[size_road] * u_max * (1.0 - rho[size_road]/ p_max);
+	f_right = rho[i+1] * u_max * (1.0 - rho[i+1])/ p_max;
+      } 
+      //Right boundary
+      else if (i==size_road) {
+	f_right = rho[0] * u_max * (1.0 - rho[0]/ p_max);
+	f_left = rho[i-1] * u_max * (1.0 - rho[i-1]/ p_max);
+      }
+      //Not on boundaries
+      else{
+	f_right = rho[i+1] * u_max * (1.0 - rho[i+1]/ p_max);
+	f_left = rho[i-1] * u_max * (1.0 - rho[i-1]/ p_max);
+      }
+
+      //Calculate f at i
+      f_cent = rho[i]*u_max*(1.0 - rho[i]/p_max);  
+
+      //Find artificial viscosity using 2nd derivative
+      visc = - eta * (f_right - 2*f_cent + f_left) / delta;
+
+      //Find dpdt
+      dpdt[i] = - (f_right - f_left) / (2*delta) + visc;
+
+    }
+  }
+
+};
+
+struct Traffic{
+  const static Doub x_center = 0.5;
+  const static Doub lambda = 0.1;
+  const static Doub u_max = 1.0;
+  const static Doub p_max = 1.0;
+  const static Doub x_max = 1.0;
+
+
+  Doub perturb;
+  Doub rho_bar;
+
+  int dim;
+
+  VecDoub road;
+  int size_road;
+  int t_max;
+  Doub delta;
+  Doub eta;
+  MatDoub positions;
+
+
+  //constructor
+  Traffic(Doub perturb_in, Doub rho_bar_in, int t_max_in, int size_road_in, Doub eta_in) {
+    //Multiply by rho_max to get real values
+    perturb = perturb_in * p_max;
+    rho_bar = rho_bar_in * p_max;
+
+    //Initialize t and x and eta
+    size_road = size_road_in;
+    t_max = t_max_in;
+    eta = eta_in;
+
+    delta = 1.0/ (Doub)size_road;
+  }
+
+  void init(){
+    //Assign 
+    road.assign(size_road + 1, 1.0);
+    positions.assign(size_road + 1, size_road+1, 1.0);
+  }
+
+  void update(){
+
+    //sets absolute and relative tolerances
+    //also sets minimum step size and first guess of step size
+    const Doub atol = 1.e-5, rtol = atol, h1=0.001, hmin=0.0;
+    Output out;
+    //width of cells in data files
+    int width = 17;
+
+
+    //Initialize data file of rho values over t and x for surface plot
+    ofstream outfile_p;
+    outfile_p.open("Rho over x and t");
+    outfile_p.setf(ios::left);
+    outfile_p << setw(width) << "# t " << setw(width) << " x " << setw(width) << " rho " << endl;
+    outfile_p << "#====================================================" << endl;
+
+
+    //Write rho values to file at time t = 0
+    ofstream outfile_t;
+    ostringstream filename;
+    filename << "Rho over x at t=" << 0 << ".out" << ends;
+    outfile_t.open(filename.str().c_str());  
+    outfile_t.setf(ios::left);
+    outfile_t << setw(width) << "#Rho"<< setw(width) << "x   " << endl;
+
+
+    //initialize file for making heat map
+    ofstream outfile_h;
+    outfile_h.open("heatmap.dat");
+    outfile_h.setf(ios::left);
+
+    //Create increment for position vector
+    int fourth = (int)size_road / 4;
+
+    int k=0;
+    
+    //Set initial rho values as guess and write to file
+    for(int i = 0; i <= size_road; i++){
+      Doub x = (Doub)i*delta;
+
+      //inital guess equation
+      Doub cur_rho = rho_bar + perturb * exp(-(x-x_center)*(x-x_center) / (lambda*lambda));
+
+      //Write to road vector (which is used for ODE)
+      road[i] = cur_rho;
+
+      //Initialize positions for position vector (4 positions)	
+      //x is 0.25,0.5,0.75,1.0
+
+      if(i % fourth == 0){
+	positions[k][0] = x;
+	k++;
+
+      }
+      
+
+
+      //Write rho and x to file
+      outfile_t << setw(width) << x << setw(width) << cur_rho << endl;
+      //Write rho and x and t to file
+      outfile_p << setw(width) << 0 << setw(width) << x << setw(width) << cur_rho << endl;
+      //writing to heatmap file
+      outfile_h << setw(width) << setprecision(5) << cur_rho;
+    }
+    outfile_h << endl;
+
+     
+
+    //Initialize odeint object
+    RoadRage anger(u_max, p_max, size_road,eta);
+
+    //Create vector of velocities to calculate positions
+    VecDoub u(10);
+
+    Doub i_inc = 1;
+    int t_100 = (int)1.0 /i_inc;
+    int i=0;
+    //Integrate at each value of x over time (not including initial guess)
+    for(Doub i_new = 0; i_new < t_max; i_new += i_inc){
+      // i = (int) i_new * t_100;
+      //cout << i_new << endl;
+      Odeint<StepperDopr5<RoadRage> > ode(road, i, i+i_inc, atol, rtol, h1, hmin,out,anger);
+      ode.integrate();
+
+      //Calculate velocities and then calculate positions
+      //Iterate through rho values along x
+      int j = 0;
+      
+      for(int s = 0; s<size_road; s++){
+	if(s % fourth == 0){
+	  
+	  u[s] = 1.0 - road[s];
+	  positions[j][i+1] = positions[j][i] + u[s]; //delta t is 1
+	  
+	  //Position is greater than 1
+	  if(positions[j][i+1] > 1.0){
+	    positions[j][i+1] = positions[j][i+1] - 1.0;
+	  }
+	  
+	  //cout << positions[j][i+1] << endl;
+	  j++;
+	  
+	}
+	//Clear velocity vector
+	u[s] = 0;
+      }
+     
+      //outfile_x << endl;
+      // cout << i_new << endl;
+      Doub i_top = 9.0;
+	
+      //Write rho values to file if t is in quarters of tmax
+      if(i_new == 0.8 || i_new == 0.2 || i_new== 0.8){
+	//if(i_new == 0.6){
+	cout << i_new << endl;
+	//cout << i_new << endl;
+	//Create file with rho values over time
+	ofstream outfile_t;
+	ostringstream filename;
+	filename << "Rho over x at t=" << i_new << ".out" << ends;
+	outfile_t.open(filename.str().c_str());
+
+	outfile_t.setf(ios::left);
+	outfile_t << setw(width) << "# x " << setw(width) << " Rho " << endl;
+
+
+	//Write rho vs x to file
+	for(int s = 0; s <= size_road; s++){
+	  Doub x = (Doub)s*delta;
+	  outfile_t << setw(width) << x << setw(width) << road[s] << endl;
+	}
+      }
+
+      //write current road data to splot and heat map
+      for(int r = 0; r <= size_road; r++){
+	Doub x = (Doub)r*delta;
+
+	//to heatmap
+	outfile_h << setw(width) << setprecision(5) << road[r];
+
+	//only write to splot if not first guess (already did that)
+	if(i!=0){
+	  outfile_p << setw(width) << i_new << setw(width) << x << setw(width) << road[r] << endl;
+	}
+      }
+
+      outfile_h << endl;
+      outfile_p << endl;
+      i++;
+    }
+    //Done with odeint
+ 
+
+    //Write position matrix to 4 files for 4 positions
+    for(int x=0; x<4; x++){
+
+      //Initialize file for positions
+      ofstream outfile_x;
+      ostringstream filename;
+      filename << "X vs t_" << x << ".out" << ends;
+      outfile_x.open(filename.str().c_str());
+
+      outfile_x.setf(ios::left);
+      outfile_x << setw(width) << "#t " << setw(width) << "x" << endl;
+
+      //Iterate over time for each file
+      int t_size = t_max*t_100;
+      for(int t=0; t<10; t++){
+	outfile_x << setw(width) << t << setw(width) << positions[x][t] << endl;
+      }
+    }
+  }
+
+  ~Traffic(){}
+
+
+  void print_road(){
+    for(int i = 0; i <= size_road; i++){
+      cout << setw(5) << setprecision(3) << road[i];
+    }
+    cout << endl;
+  }
+
+};
+
+
+int main(){
+
+  //Set conditions of road
+  Doub delta_rho = 0.001;
+  int t_max = 10;
+  int size_road = 100;
+  Doub rho_bar = 0.5;
+    
+  Doub eta = 0.0;
+
+  Traffic traf(delta_rho, rho_bar, t_max, size_road,eta);
+
+
+  traf.init();
+  traf.update();
+
+
+  return 0;
+}
+
